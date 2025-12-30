@@ -1,14 +1,9 @@
-import random
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for
+import os
 
 app = Flask(__name__)
-
-# ==================================================
-# 1. EXTENDED USDA-STYLE FOOD DATABASE (per 100g)
-# ==================================================
-# cal (kcal), pro (g), fat (g), carb (g),
-# fiber (g), sugar (g), sodium (mg),
-# eco, processed, tip
+# 设置 Session 密钥，确保能记住你的个人资料
+app.secret_key = os.urandom(24)
 
 
 FOOD_DB = {
@@ -336,109 +331,120 @@ FOOD_DB = {
 
 
 # ==================================================
-# 2. Warm, adaptive emotional messages
-# ==================================================
-def generate_warm_message(score, fiber, sugar):
+# 暖心小贴士生成器 (包含增肌逻辑)
+# ==========================================
+def get_warm_msg(score, stats, goal, weight):
+    if goal == "gain":
+        p_ratio = stats["pro"] / weight if weight > 0 else 0
+        if p_ratio < 1.6:
+            return "Muscle needs bricks to build! Try adding more protein (eggs or chicken) next time 🥚💪"
+        if stats["cal"] < 1800:
+            return "Eat big to get big! Don't be afraid of healthy carbs for energy 🍚"
+    
     if score >= 85: return "You’re taking amazing care of yourself today 🌱"
-    if fiber < 20: return "Your body might enjoy a bit more fiber tomorrow — gentle progress 💛"
-    if sugar > 50: return "Today had some sweetness — that’s okay. Balance comes with time 🍃"
+    if stats["fiber"] < 15: return "Your body might enjoy a bit more fiber tomorrow — gentle progress 💛"
+    if stats["sugar"] > 50: return "Today had some sweetness — balance comes with time 🍃"
     return "You showed up today, and that already matters 🤍"
 
-def macro_targets(weight, calories):
-    p_min = weight * 1.2
-    f_min = (0.2 * calories) / 9
-    c_min = (calories * 0.45) / 4
-    return p_min
-
-def health_score(stats, target_cal, pmin):
-    score = 100
-    if abs(stats["cal"] - target_cal) > 400: score -= 15
-    if stats["pro"] < pmin: score -= 15
-    if stats["fiber"] < 25: score -= 10
-    if stats["sugar"] > 50: score -= 10
-    score -= stats["processed_count"] * 5
-    return max(0, score)
-
+# ==========================================
+# 核心路由
+# ==========================================
 @app.route("/", methods=["GET", "POST"])
-@app.route("/analyze", methods=["POST"]) # 增加此路由以匹配 HTML form action
 def index():
     analysis = None
     error = None
-    profile = {}
+    # 从 Session 获取已存资料
+    profile = session.get('profile', {})
 
     if request.method == "POST":
         try:
-            # 1. 获取并保存用户信息
-            profile = {
-                "age": int(request.form.get("age", 0)),
-                "weight": float(request.form.get("weight", 0)),
-                "height": float(request.form.get("height", 0)),
-                "gender": request.form.get("gender"),
-                "goal": request.form.get("goal")
-            }
+            # 1. 如果是第一次填写资料，存入 Session
+            if 'weight' in request.form and not profile:
+                profile = {
+                    "age": int(request.form.get("age", 25)),
+                    "weight": float(request.form.get("weight", 0)),
+                    "height": float(request.form.get("height", 0)),
+                    "gender": request.form.get("gender", "female"),
+                    "goal": request.form.get("goal", "maintain")
+                }
+                session['profile'] = profile
 
-            if profile["height"] == 0 or profile["weight"] == 0:
-                raise ValueError("Zero height or weight")
-
-            # 2. 计算基础指标
-            bmi = round(profile["weight"] / ((profile["height"]/100)**2), 1)
-            bmr = 10*profile["weight"] + 6.25*profile["height"] - 5*profile["age"] + (5 if profile["gender"]=="male" else -161)
-            tdee = int(bmr * 1.375)
-            target_cal = tdee - 500 if profile["goal"]=="lose" else tdee + 300 if profile["goal"]=="gain" else tdee
-            pmin = profile["weight"] * 1.2
-
-            # 3. 解析食物
-            stats = {"cal":0,"pro":0,"fat":0,"carb":0,"fiber":0,"sugar":0,"processed_count":0}
-            meals = ["breakfast", "lunch", "dinner", "snacks"]
+            # 2. 核心计算 (BMI & 科学目标)
+            weight = profile["weight"]
+            height = profile["height"]
+            bmi = round(weight / ((height/100)**2), 1)
             
-            for m in meals:
+            # Mifflin-St Jeor 公式计算基础代谢 (BMR)
+            bmr = 10*weight + 6.25*height - 5*profile["age"] + (5 if profile["gender"]=="male" else -161)
+            
+            # 根据目标调整热量和蛋白质需求
+            if profile["goal"] == "gain":
+                target_cal = int(bmr * 1.5) + 300  # 增肌：高系数 + 盈余
+                target_pro = round(weight * 2.0, 1) # 增肌：2g/kg 体重
+            elif profile["goal"] == "lose":
+                target_cal = int(bmr * 1.2) - 400  # 减脂：低系数 + 缺口
+                target_pro = round(weight * 1.5, 1) # 减脂：1.5g/kg 维持肌肉
+            else:
+                target_cal = int(bmr * 1.3)        # 维持：标准系数
+                target_pro = round(weight * 1.2, 1) # 维持：1.2g/kg
+
+            # 3. 解析用户输入的餐食 (格式：food:grams)
+            stats = {"cal":0, "pro":0, "fat":0, "carb":0, "fiber":0, "sugar":0, "proc_count":0}
+            has_food = False
+            
+            for m in ["breakfast", "lunch", "dinner", "snacks"]:
                 raw = request.form.get(f"{m}_input", "").lower()
                 if not raw: continue
+                has_food = True
                 for item in raw.split(","):
                     if ":" not in item: continue
                     name, grams = item.split(":")
-                    name = name.strip()
-                    try:
-                        g = float(grams)
-                    except: g = 100.0
-                    
+                    name, g = name.strip(), float(grams)
                     if name in FOOD_DB:
-                        f = FOOD_DB[name]
-                        r = g / 100
-                        stats["cal"] += f["cal"] * r
-                        stats["pro"] += f["pro"] * r
-                        stats["fat"] += f["fat"] * r
-                        stats["carb"] += f["carb"] * r
-                        stats["fiber"] += f.get("fiber", 0) * r
-                        stats["sugar"] += f.get("sugar", 0) * r
-                        if f.get("processed") == "yes": stats["processed_count"] += 1
+                        food_data = FOOD_DB[name]
+                        ratio = g / 100
+                        for key in ["cal", "pro", "fat", "carb", "fiber", "sugar"]:
+                            stats[key] += food_data.get(key, 0) * ratio
+                        if food_data["processed"] == "yes":
+                            stats["proc_count"] += 1
 
-            # 4. 封装分析数据 (与 HTML 变量名完全对应)
-            score = health_score(stats, target_cal, pmin)
-            percent = min(100, int((stats["cal"] / target_cal) * 100)) if target_cal > 0 else 0
-            
-            analysis = {
-                "bmi": bmi,
-                "target": target_cal,
-                "total_cal": int(stats["cal"]),
-                "pro": round(stats["pro"], 1),
-                "fat": round(stats["fat"], 1),
-                "carb": round(stats["carb"], 1),
-                "fiber": round(stats["fiber"], 1),
-                "sugar": round(stats["sugar"], 1),
-                "percent": percent,
-                "score": score,
-                "warm": generate_warm_message(score, stats["fiber"], stats["sugar"])
-            }
+            # 4. 生成分析报告
+            if has_food:
+                # 健康评分逻辑
+                score = 100
+                if profile["goal"] == "gain" and stats["pro"] < target_pro: score -= 20
+                if abs(stats["cal"] - target_cal) > 500: score -= 15
+                score -= (stats["proc_count"] * 5)
+                
+                analysis = {
+                    "bmi": bmi,
+                    "target": target_cal,
+                    "total_cal": int(stats["cal"]),
+                    "pro": round(stats["pro"], 1),
+                    "target_pro": target_pro,
+                    "fat": round(stats["fat"], 1),
+                    "carb": round(stats["carb"], 1),
+                    "fiber": round(stats["fiber"], 1),
+                    "sugar": round(stats["sugar"], 1),
+                    "percent": min(100, int((stats["cal"] / target_cal) * 100)) if target_cal > 0 else 0,
+                    "score": max(0, score),
+                    "warm": get_warm_msg(score, stats, profile["goal"], weight)
+                }
 
         except Exception as e:
-            error = f"Oops! Please check your input format. (Error: {str(e)})"
+            error = f"Oops! Make sure to use 'food:grams' format. Error: {e}"
 
     return render_template("index.html", analysis=analysis, error=error, profile=profile)
 
+# ==========================================
+# 重置路由 (清除所有记忆)
+# ==========================================
 @app.route("/reset")
 def reset():
-    return render_template("index.html", analysis=None, error=None, profile={})
+    session.clear()
+    return redirect(url_for('index'))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # 动态端口，适配 Render 部署
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
