@@ -3,178 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriCare Assistant | Science & Kindness</title>
-    <!-- 引入 Bootstrap 框架，负责布局 -->
+    <title>NutriCare Assistant | Science & Gain</title>
+    <!-- 必须联网才能加载的样式库 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root { --sage: #4a7c59; --light-mint: #f0f7f4; --protein-blue: #0077b6; }
-        body { background-color: var(--light-mint); font-family: 'Segoe UI', system-ui, sans-serif; color: #2d4033; }
-        
-        /* 顶部绿色背景 */
-        .hero { background: var(--sage); color: white; padding: 40px 0; border-radius: 0 0 40px 40px; }
-        
-        /* 卡片样式 */
-        .card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; }
-        
-        /* 暖心语录框 */
-        .warm-box { background: #fffde7; border-left: 5px solid #ffd600; padding: 15px; border-radius: 12px; font-style: italic; color: #555; }
-        
-        /* 大数字样式 */
-        .stat-val { font-size: 2.5rem; font-weight: 800; color: var(--sage); line-height: 1; }
-        
-        /* 按钮 */
-        .btn-main { background: var(--sage); color: white; border-radius: 12px; font-weight: bold; border: none; padding: 12px; width: 100%; transition: 0.3s; }
-        .btn-main:hover { background: #355e42; color: white; transform: translateY(-2px); }
-        
-        /* 输入框 */
-        .form-control, .form-select { border-radius: 10px; border: 1px solid #eee; background-color: #f8f9fa; }
-        .form-control:focus { box-shadow: none; border-color: var(--sage); }
-
-        /* 进度条定制 */
-        .progress { background-color: #e9ecef; border-radius: 10px; overflow: hidden; }
+        body { background-color: var(--light-mint); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d4033; margin: 0; }
+        .hero { background: var(--sage); color: white; padding: 40px 0; border-radius: 0 0 40px 40px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 1140px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 25px; height: 100%; }
+        .warm-box { background: #fffde7; border-left: 5px solid #ffd600; padding: 15px; border-radius: 12px; font-style: italic; margin-bottom: 20px; }
+        .stat-val { font-size: 2.5rem; font-weight: 800; color: var(--sage); display: block; }
+        .btn-main { background: var(--sage); color: white; border-radius: 12px; font-weight: bold; border: none; padding: 12px; width: 100%; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-main:hover { background: #355e42; transform: translateY(-2px); }
+        .progress { background-color: #eee; border-radius: 10px; height: 12px; margin: 10px 0; overflow: hidden; }
+        .progress-bar { height: 100%; transition: width 0.5s; }
+        .pro-bar { background-color: var(--protein-blue) !important; }
+        .cal-bar { background-color: var(--sage) !important; }
+        textarea { width: 100%; border-radius: 10px; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; }
+        .row { display: flex; flex-wrap: wrap; gap: 20px; }
+        .col { flex: 1; min-width: 300px; }
+        label { font-weight: bold; font-size: 0.8rem; color: #666; display: block; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<!-- 顶部标题区 -->
-<div class="hero text-center shadow mb-5">
-    <h1 class="fw-bold">NutriCare Assistant</h1>
-    <p class="opacity-75">Scientific Tracking with a Warm Heart ❤️</p>
+<div class="hero">
+    <h1 style="margin:0;">NutriCare Assistant</h1>
+    <p style="opacity: 0.8;">Scientific Tracking with a Warm Heart ❤️</p>
 </div>
 
-<div class="container pb-5">
-    <!-- 错误提示 -->
-    {% if error %}
-    <div class="alert alert-danger rounded-3 border-0 shadow-sm">{{ error }}</div>
-    {% endif %}
+<div class="container">
+    {% if error %}<div style="background:#f8d7da; color:#721c24; padding:15px; border-radius:10px; margin-bottom:20px;">{{ error }}</div>{% endif %}
 
     <form method="POST">
-    <div class="row g-4">
-        
-        <!-- 1. Health Profile 个人资料栏 -->
-        <div class="col-lg-4">
-            <div class="card p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold mb-0">1. Health Profile</h5>
-                    {% if profile.weight %}
-                    <a href="/reset" class="btn btn-sm btn-outline-danger" style="border-radius: 8px;">Reset</a>
-                    {% endif %}
+    <div class="row">
+        <!-- 1. Profile -->
+        <div class="col">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0;">1. Health Profile</h3>
+                    {% if profile.weight %}<a href="/reset" style="color:red; font-size:0.8rem;">Reset</a>{% endif %}
                 </div>
                 
                 {% if not profile.weight %}
-                <!-- 未填写状态：显示输入表单 -->
-                <div class="row g-3">
-                    <div class="col-12"><label class="small text-muted fw-bold">Age</label><input type="number" name="age" class="form-control" placeholder="e.g. 25" required></div>
-                    <div class="col-6"><label class="small text-muted fw-bold">Weight (kg)</label><input type="number" step="0.1" name="weight" class="form-control" placeholder="60.5" required></div>
-                    <div class="col-6"><label class="small text-muted fw-bold">Height (cm)</label><input type="number" name="height" class="form-control" placeholder="170" required></div>
-                    <div class="col-6"><label class="small text-muted fw-bold">Gender</label><select name="gender" class="form-select"><option value="female">Female</option><option value="male">Male</option></select></div>
-                    <div class="col-6"><label class="small text-muted fw-bold">Goal</label><select name="goal" class="form-select">
-                        <option value="gain">Muscle Gain 💪</option>
-                        <option value="lose">Weight Loss 📉</option>
-                        <option value="maintain">Maintain ⚖️</option>
-                    </select></div>
-                    <div class="col-12 mt-4"><p class="small text-muted italic">Setting your profile helps us calculate scientific targets for you.</p></div>
+                <label>Age</label><input type="number" name="age" class="form-control" required>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;"><label>Weight (kg)</label><input type="number" step="0.1" name="weight" class="form-control" required></div>
+                    <div style="flex:1;"><label>Height (cm)</label><input type="number" name="height" class="form-control" required></div>
                 </div>
+                <label>Gender</label><select name="gender" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="female">Female</option><option value="male">Male</option>
+                </select>
+                <label>Goal</label><select name="goal" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="gain">Muscle Gain 💪</option>
+                    <option value="lose">Weight Loss 📉</option>
+                    <option value="maintain">Maintain ⚖️</option>
+                </select>
                 {% else %}
-                <!-- 已填写状态：显示资料摘要 -->
-                <div class="p-3 bg-light rounded-3 mb-3 border-start border-4 border-success">
-                    <p class="mb-1"><strong>Weight:</strong> {{ profile.weight }}kg</p>
-                    <p class="mb-0"><strong>Goal:</strong> {{ profile.goal }}</p>
-                </div>
-                <p class="small text-success fw-bold">✅ Profile saved! Now, tell me what you ate today.</p>
-                <div class="text-center mt-4 opacity-25">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3062/3062013.png" width="80" alt="profile icon">
+                <div style="background:var(--light-mint); padding:15px; border-radius:10px; margin-top:20px;">
+                    <p><b>Weight:</b> {{ profile.weight }}kg</p>
+                    <p><b>Goal:</b> {{ profile.goal }}</p>
+                    <p style="color:green; font-size:0.9rem;">✅ Profile saved! We are tracking your Muscle Gain progress.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- 2. Daily Meal Log 饮食记录栏 -->
-        <div class="col-lg-4">
-            <div class="card p-4 h-100">
-                <h5 class="fw-bold mb-4">2. Daily Meal Log</h5>
-                <div class="mb-3">
-                    <label class="fw-bold small text-success">Breakfast</label>
-                    <textarea name="breakfast_input" class="form-control border-0" rows="2" placeholder="e.g. oats:50, milk:200"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="fw-bold small text-success">Lunch</label>
-                    <textarea name="lunch_input" class="form-control border-0" rows="2" placeholder="rice:150, chicken breast:150"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="fw-bold small text-success">Dinner</label>
-                    <textarea name="dinner_input" class="form-control border-0" rows="2" placeholder="tofu:100, broccoli:200"></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="fw-bold small text-success">Snacks</label>
-                    <textarea name="snacks_input" class="form-control border-0" rows="2" placeholder="apple:150"></textarea>
-                </div>
-                <button type="submit" class="btn-main shadow">Generate Daily Report</button>
+        <!-- 2. Meals -->
+        <div class="col">
+            <div class="card">
+                <h3>2. Daily Meal Log</h3>
+                <label>Breakfast</label><textarea name="breakfast_input" placeholder="e.g. oats:50, milk:200"></textarea>
+                <label>Lunch</label><textarea name="lunch_input" placeholder="rice:150, chicken breast:150"></textarea>
+                <label>Dinner</label><textarea name="dinner_input" placeholder="tofu:100, broccoli:200"></textarea>
+                <label>Snacks</label><textarea name="snacks_input" placeholder="apple:150"></textarea>
+                <button type="submit" class="btn-main">Generate Daily Report</button>
             </div>
         </div>
 
-        <!-- 3. Dashboard 数据面板区 -->
-        <div class="col-lg-4">
+        <!-- 3. Dashboard -->
+        <div class="col">
             {% if analysis %}
-            <div class="card p-4">
-                <!-- 暖心小贴士 -->
-                <div class="warm-box mb-4">"{{ analysis.warm }}"</div>
-                
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-success mb-0">Dashboard</h5>
-                    <span class="badge bg-secondary rounded-pill small">BMI: {{ analysis.bmi }}</span>
+            <div class="card">
+                <div class="warm-box">"{{ analysis.warm }}"</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:var(--sage); margin:0;">Dashboard</h3>
+                    <span style="background:#6c757d; color:white; padding:2px 10px; border-radius:20px; font-size:0.8rem;">BMI: {{ analysis.bmi }}</span>
                 </div>
-                
-                <!-- 热量进度 -->
-                <div class="text-center my-4">
-                    <div class="stat-val mb-1">{{ analysis.total_cal }}</div>
-                    <p class="text-muted small">Calories In / Target: {{ analysis.target }}</p>
-                    <div class="progress mb-2" style="height: 12px;">
-                        <div class="progress-bar" style="width: {{ analysis.percent }}%; background: var(--sage)"></div>
-                    </div>
-                    <span class="small fw-bold">{{ analysis.percent }}% of Calorie Goal</span>
 
-                    <!-- 蛋白质进度 (针对增肌优化) -->
-                    <div class="mt-4 p-3 bg-light rounded-3 text-start">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="small fw-bold" style="color: var(--protein-blue)">Protein Track</span>
-                            <span class="small text-muted">{{ analysis.pro }}g / {{ analysis.target_pro }}g</span>
+                <div style="text-align:center; margin:20px 0;">
+                    <span class="stat-val">{{ analysis.total_cal }}</span>
+                    <p style="font-size:0.8rem; color:#666;">Calories In / Target: {{ analysis.target }}</p>
+                    <div class="progress"><div class="progress-bar cal-bar" style="width: {{ analysis.percent }}%;"></div></div>
+                    <b style="font-size:0.8rem;">{{ analysis.percent }}% of Calorie Goal</b>
+
+                    <!-- 增肌专属蛋白质条 -->
+                    <div style="margin-top:25px; text-align:left;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold;">
+                            <span style="color:var(--protein-blue);">Protein Track</span>
+                            <span>{{ analysis.pro }}g / {{ analysis.target_pro }}g</span>
                         </div>
-                        <div class="progress" style="height: 8px;">
-                            {% set pro_percent = (analysis.pro / analysis.target_pro * 100)|int if analysis.target_pro > 0 else 0 %}
-                            <div class="progress-bar" style="width: {{ pro_percent }}%; background: var(--protein-blue)"></div>
+                        <div class="progress" style="height:8px;">
+                            {% set pro_p = (analysis.pro / analysis.target_pro * 100)|int if analysis.target_pro > 0 else 0 %}
+                            <div class="progress-bar pro-bar" style="width: {{ pro_p }}%;"></div>
                         </div>
-                        <small class="text-muted mt-1 d-block" style="font-size: 0.7rem;">{{ pro_percent }}% of protein target achieved</small>
+                        <p style="font-size:0.7rem; color:#999; margin:5px 0;">Progress towards muscle building goal</p>
                     </div>
                 </div>
 
-                <!-- 详细营养素列表 -->
-                <div class="alert alert-light border-0 bg-light small mb-3">
-                    <div class="row text-center g-0">
-                        <div class="col-4 border-end"><strong>P</strong><br>{{ analysis.pro }}g</div>
-                        <div class="col-4 border-end"><strong>F</strong><br>{{ analysis.fat }}g</div>
-                        <div class="col-4"><strong>C</strong><br>{{ analysis.carb }}g</div>
-                    </div>
-                    <hr class="my-2 opacity-10">
-                    <div class="row text-center text-muted g-0">
-                        <div class="col-6">Fiber: {{ analysis.fiber }}g</div>
-                        <div class="col-6">Sugar: {{ analysis.sugar }}g</div>
-                    </div>
+                <div style="background:#f8f9fa; padding:10px; border-radius:10px; font-size:0.8rem; display:flex; justify-content:space-around; text-align:center;">
+                    <div><b>P</b><br>{{ analysis.pro }}g</div>
+                    <div><b>F</b><br>{{ analysis.fat }}g</div>
+                    <div><b>C</b><br>{{ analysis.carb }}g</div>
+                    <div><b>Fiber</b><br>{{ analysis.fiber }}g</div>
                 </div>
-
-                <!-- 健康评分 -->
-                <div class="text-center">
-                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 1px;">Health Score</span>
-                    <div class="h3 fw-bold text-success mb-0">{{ analysis.score }}/100</div>
+                <div style="text-align:center; margin-top:20px;">
+                    <small style="color:#999;">HEALTH SCORE</small>
+                    <h2 style="color:var(--sage); margin:0;">{{ analysis.score }}/100</h2>
                 </div>
             </div>
             {% else %}
-            <!-- 默认未分析状态 -->
-            <div class="card h-100 d-flex flex-column justify-content-center align-items-center opacity-50 p-5 text-center">
-                <img src="https://cdn-icons-png.flaticon.com/512/1693/1693746.png" width="60" class="mb-3">
-                <h5 class="fw-bold">Waiting for your log...</h5>
-                <p class="small">Input your meals to see your scientific daily report and progress.</p>
-                <p class="small text-success fw-bold mt-2">Special tracking enabled for Muscle Gain! 💪</p>
+            <div class="card" style="display:flex; justify-content:center; align-items:center; text-align:center; opacity:0.5;">
+                <p>Waiting for your meal log...<br><b>Muscle Gain mode active!</b></p>
             </div>
             {% endif %}
         </div>
