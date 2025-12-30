@@ -87,38 +87,43 @@
 
   </form>
 
-  {% if analysis %}
-  <!-- Result -->
-  <div class="card p-4">
-    <h5 class="accent mb-3">Daily Nutrition Summary</h5>
+{% if analysis %}
+<div class="card p-4 mt-4">
 
-    <div class="warm mb-4">
-      "{{ analysis.warm }}"
-    </div>
+  <h5 class="accent mb-3">Daily Nutrition Summary</h5>
 
-    <div class="row text-center mb-4">
-      <div class="col-md-4">
-        <div class="big-number">{{ analysis.total_cal }}</div>
-        <div class="text-muted">Calories Consumed</div>
-      </div>
-      <div class="col-md-4">
-        <div class="big-number">{{ analysis.target }}</div>
-        <div class="text-muted">Daily Target</div>
-      </div>
-      <div class="col-md-4">
-        <div class="big-number">{{ analysis.bmi }}</div>
-        <div class="text-muted">BMI</div>
-      </div>
-    </div>
-
-    <p class="text-muted small">
-      This report combines quantitative nutritional analysis with qualitative
-      feedback to promote sustainable and healthy eating behaviors.
-    </p>
+  <div class="warm mb-4">
+    "{{ analysis.warm }}"
   </div>
-  {% endif %}
+
+  <div class="row text-center mb-4">
+    <div class="col-md-4">
+      <div class="big-number">{{ analysis.total_cal }}</div>
+      <div class="text-muted">Calories Consumed</div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="big-number">{{ analysis.target }}</div>
+      <div class="text-muted">Daily Target</div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="big-number">{{ analysis.bmi }}</div>
+      <div class="text-muted">BMI</div>
+    </div>
+  </div>
+
+  <p class="text-muted small text-center">
+    This report combines quantitative nutritional analysis with qualitative feedback
+    to promote sustainable and healthy eating behaviors.
+  </p>
+
+</div>
+{% endif %}
+
 
 </div>
 
 </body>
 </html>
+
